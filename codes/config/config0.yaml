@@ -7,18 +7,23 @@ test_root: " "
 output_path: " "
 postfix: ' ' 
 ### Model & Schemes m = (d, h, mh, mV , r)
+batch_size:
 m_V:
 m_h:
 d:
 r:
 h:
 d0:
+n:
+N:
 K:
 mode_c:
 mode_E:
 lambda0:
 T:
 l:
+### Loss Superpara
+gamma:
 ### Training Configurations
 num_workers: 15
 batch_size: 64
