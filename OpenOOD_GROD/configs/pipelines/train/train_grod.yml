@@ -1,0 +1,43 @@
+exp_name: "'@{dataset.name}'_'@{network.name}'_num'@{network.feat_dim}'_'@{trainer.name}'_al'@{trainer.alpha}'_gm'@{trainer.gamma}'_e'@{optimizer.num_epochs}'_lr'@{optimizer.lr}'_'@{mark}'/s'@{seed}'"
+output_dir: ./results/
+save_output: True
+merge_option: default
+mark: default
+seed: 0
+
+num_gpus: 1
+num_workers: 15
+num_machines: 1
+machine_rank: 0
+
+preprocessor:
+  name: base
+
+network:
+  pretrained: False
+  backbone:
+    pretrained: True
+    checkpoint: "/home/yahao/ZYJ/OpenOOD/results/vit_b_16-c867db91.pth"
+
+pipeline:
+  name: train
+
+trainer:
+  name: grod
+  alpha: 0.8
+  nums_rounded: '@{network.feat_dim}'
+  gamma: 0.1
+
+evaluator:
+  name: base
+
+optimizer:
+  name: adamw
+  num_epochs: 50
+  lr: 0.0001
+  momentum: 0.9
+  weight_decay: 0.05
+
+recorder:
+  name: base
+  save_all_models: False

@@ -1,0 +1,12 @@
+network:
+  name: vit-b-16
+  model: openood/networks/vit-b-16.py
+  num_classes: '@{dataset.num_classes}'
+  image_size: '@{dataset.image_size}'
+  pretrained: True          # set 'True' to load pretrained model
+  checkpoint: /home/tiy/.cache/torch/hub/checkpoints/vit_b_16-c867db91.pth #./results/imagenet21k+imagenet2012_ViT-B_16.pth         # ignore if pretrained is false
+  num_gpus: '@{num_gpus}'
+dataset:
+  image_size: 224
+ood_dataset:
+  image_size: 224

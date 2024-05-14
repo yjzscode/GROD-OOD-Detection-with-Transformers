@@ -1,0 +1,34 @@
+seed: 42
+seed_data: 42
+device: 'cuda:2'
+### Roots
+train_root: " "
+test_root: " "
+output_path: "./outputs"
+postfix: 'd0_2_l_60' 
+### Model & Schemes m = (d, h, mh, mV , r)
+m_V: 1
+m_h: 1
+d: 2
+r: 4
+h: 2
+d0: 2
+n: 1
+N: 5000
+K: 2
+mode_c: 'max'
+mode_E: 'e'
+lambda0: 0.5
+T: 1
+l: 60
+### Loss Superpara
+gamma: 0.1
+### Training Configurations
+num_workers: 15
+batch_size: 256
+learning_rate: 5.0e-4 #-
+weight_decay: 1.0e-2 #+
+min_learning_rate: 5.0e-6
+T_max: 25 #+
+epochs: 200
+patience: 200
