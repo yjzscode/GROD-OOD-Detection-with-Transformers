@@ -1,1 +1,1 @@
-# OOD-Detection-with-Transformer
+# OOD-Detection-with-Transformers
