@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from einops import repeat
 import math
 
-class SelfAttention(nn.Module): #单个head
+class SelfAttention(nn.Module): #one head
     def __init__(self, m_V, m_h, d, n, batch_size,device=None,requires_grad=True):
         super(SelfAttention, self).__init__()
         self.m_V = m_V
@@ -115,11 +115,7 @@ class classifier(nn.Module):
         self.linear1 = nn.Linear(int(self.n),int(K)+1)
         self.lambda0 = lambda0
         self.device = device
-        # self.lambda0 = nn.Parameter(
-        #     torch.tensor(
-        #         [lambda0], dtype=torch.float32, requires_grad=requires_grad
-        #     )
-        # )
+        
     def scoring_function(self, x, mode_E, T):#(b, K+1)
         
         if mode_E == 'e': 
@@ -176,10 +172,10 @@ class classifier(nn.Module):
 
 
 ###########################################################
-#SelfAttention(self, m_V, m_h, d, n, batch_size):
-#FFN(self, d, r):     
-#FCNN_layer(self, d0, d):
-#classifier(self, d, K, mode_c, mode_E, lambda0, T, batch_size):
+# SelfAttention(self, m_V, m_h, d, n, batch_size):
+# FFN(self, d, r):     
+# FCNN_layer(self, d0, d):
+# classifier(self, d, K, mode_c, mode_E, lambda0, T, batch_size):
    
 class TransformerBlock(nn.Module):  
     def __init__(self, m_V, m_h, d, n, r, h, batch_size,device=None,):
