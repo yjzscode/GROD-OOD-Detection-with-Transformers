@@ -56,33 +56,33 @@ class Trainer:
         mean_list_g = []
         std_list_g = []
         for i in range(config.K):
-            mean = torch.abs(torch.randn(config.d0))   # 随机生成每个簇的均值
-            std = i / 10 * torch.abs(torch.rand(config.d0)) + 0.1  # 随机生成每个簇的标准差
+            mean = torch.abs(torch.randn(config.d0))   
+            std = i / 10 * torch.abs(torch.rand(config.d0)) + 0.1  
             mean_list.append(mean)
             std_list.append(std)
             mean_list_g.append(mean)
             std_list_g.append(std)
-        mean = -torch.abs(torch.randn(config.d0)) * 5  # 随机生成每个簇的均值
-        std = 0.2 * torch.abs(torch.rand(config.d0)) + 0.1  # 随机生成每个簇的标准差
+        mean = -torch.abs(torch.randn(config.d0)) * 5  
+        std = 0.2 * torch.abs(torch.rand(config.d0)) + 0.1  
         mean_list.append(mean)
         std_list.append(std)
 
-        mean_g = torch.abs(torch.randn(config.d0)) * 5  # 随机生成每个簇的均值
-        std_g = 0.3 * torch.abs(torch.rand(config.d0)) + 0.1  # 随机生成每个簇的标准差
+        mean_g = torch.abs(torch.randn(config.d0)) * 5  
+        std_g = 0.3 * torch.abs(torch.rand(config.d0)) + 0.1  
         mean_list_g.append(mean_g)
         std_list_g.append(std_g)
 
-        mean_g = torch.randn(config.d0) * 4  # 随机生成每个簇的均值
+        mean_g = torch.randn(config.d0) * 4  
         mean_g[0] = torch.abs(mean_g[0])
         mean_g[1] = - torch.abs(mean_g[1])
-        std_g = 0.4 * torch.abs(torch.rand(config.d0)) + 0.1  # 随机生成每个簇的标准差
+        std_g = 0.4 * torch.abs(torch.rand(config.d0)) + 0.1  
         mean_list_g.append(mean_g)
         std_list_g.append(std_g)
 
-        mean_g = torch.randn(config.d0) * 3  # 随机生成每个簇的均值
+        mean_g = torch.randn(config.d0) * 3  
         mean_g[0] = -torch.abs(mean_g[0])
         mean_g[1] = torch.abs(mean_g[1])
-        std_g = 0.3 * torch.abs(torch.rand(config.d0)) + 0.1  # 随机生成每个簇的标准差
+        std_g = 0.3 * torch.abs(torch.rand(config.d0)) + 0.1  
         mean_list_g.append(mean_g)
         std_list_g.append(std_g)
 
@@ -259,7 +259,7 @@ class Trainer:
                 torch.zeros(traindata.size()[0]).to(self.device),
                 )
 
-            loss1 = F.cross_entropy(label_matrix, label) #正常的交叉熵损失
+            loss1 = F.cross_entropy(label_matrix, label) 
             # print(biclas.size(),label_biclas.size())
             loss2 = F.cross_entropy(biclas.to(self.device), label_biclas.to(torch.int64).to(self.device))
 
@@ -274,7 +274,7 @@ class Trainer:
             #     torch.zeros(traindata.size()[0]).to(self.device),
             #     )
             
-            # loss2 = torch.sum(torch.abs(label_OOD - output_OOD)) #额外的OOD损失，cond2
+            # loss2 = torch.sum(torch.abs(label_OOD - output_OOD))
             loss = self.config.gamma * loss1 + (1 - self.config.gamma) * loss2
 
             loss.backward()
@@ -309,7 +309,7 @@ class Trainer:
                 # print(label-output)
                 label_matrix = self.model(testdata)[1]#[LOGITS]
 
-                loss1 = F.cross_entropy(label_matrix, label) #正常的交叉熵损失
+                loss1 = F.cross_entropy(label_matrix, label) 
 
                 label_OOD = torch.where(
                     torch.gt(label,self.config.K),                
@@ -321,7 +321,7 @@ class Trainer:
                     torch.ones(testdata.size()[0]).to(self.device),
                     torch.zeros(testdata.size()[0]).to(self.device),
                     )
-                loss2 = torch.sum(torch.abs(label_OOD - output_OOD)) #额外的OOD损失，cond2
+                loss2 = torch.sum(torch.abs(label_OOD - output_OOD))
                 loss = self.config.gamma * loss1 + (1 - self.config.gamma) * loss2
 
                 acc = accuracy(label_matrix, label)[0]  
