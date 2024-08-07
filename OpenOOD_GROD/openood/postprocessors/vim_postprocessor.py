@@ -60,24 +60,13 @@ class VIMPostprocessor(BasePostprocessor):
                 # logit_id_train = feature_id_train @ self.w.T + self.b
 
             self.u = -np.matmul(pinv(self.w), self.b)
-            # ec = EmpiricalCovariance(assume_centered=True)
-            # print((feature_id_train - self.u).shape) #(50000,768)
-            # ec.fit(feature_id_train - self.u)
-            # eig_vals, eigen_vectors = np.linalg.eig(ec.covariance_)
-            
-            # centered_data = feature_id_train - self.u
-            # empirical_covariance = np.cov(centered_data, rowvar=True)
-            # eig_vals, eigen_vectors = np.linalg.eig(empirical_covariance)
-            
             
             feature_id_train_tensor = torch.tensor(feature_id_train, dtype=torch.float32).cuda()
             u_tensor = torch.tensor(self.u, dtype=torch.float32).cuda()
             
-            # 计算中心化的特征数据，并将其移动到 GPU
             centered_data_tensor = feature_id_train_tensor - u_tensor
             empirical_covariance = torch.matmul(centered_data_tensor.t(), centered_data_tensor) / centered_data_tensor.size(0)
             
-            # 计算特征值和特征向量，并将其移动到 CPU
             eig_vals, eigen_vectors = torch.linalg.eigh(empirical_covariance)#, eigenvectors=True)
             eig_vals = eig_vals.cpu().detach().numpy()
             eigen_vectors = eigen_vectors.cpu().detach().numpy()
