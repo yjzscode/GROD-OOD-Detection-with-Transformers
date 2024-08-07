@@ -17,7 +17,7 @@ network:
   pretrained: False
   backbone:
     pretrained: True
-    checkpoint: "/home/yahao/ZYJ/OpenOOD/results/vit_b_16-c867db91.pth"
+    checkpoint: "./OpenOOD/results/vit_b_16-c867db91.pth"
 
 pipeline:
   name: train
