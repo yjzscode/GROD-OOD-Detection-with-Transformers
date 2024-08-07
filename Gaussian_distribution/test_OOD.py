@@ -50,12 +50,12 @@ class Test:
         mean_list = []
         std_list = []
         for i in range(config.K):
-            mean = torch.abs(torch.randn(config.d0))   # 随机生成每个簇的均值
-            std = i / 10 * torch.abs(torch.rand(config.d0)) + 0.1  # 随机生成每个簇的标准差
+            mean = torch.abs(torch.randn(config.d0))   
+            std = i / 10 * torch.abs(torch.rand(config.d0)) + 0.1  
             mean_list.append(mean)
             std_list.append(std)
-        mean = -torch.abs(torch.randn(config.d0)) * 5  # 随机生成每个簇的均值
-        std = 0.2 * torch.abs(torch.rand(config.d0)) + 0.1  # 随机生成每个簇的标准差
+        mean = -torch.abs(torch.randn(config.d0)) * 5  
+        std = 0.2 * torch.abs(torch.rand(config.d0)) + 0.1  
         mean_list.append(mean)
         std_list.append(std)
 
@@ -171,7 +171,7 @@ class Test:
                     if label[i]==2 and output[i] != 2:
                         OOD_E += 1
                 label_matrix = biclas_matrix
-                loss1 = F.cross_entropy(label_matrix, label) #正常的交叉熵损失
+                loss1 = F.cross_entropy(label_matrix, label) # cross-entropy loss
 
                 label_OOD = torch.where(
                     torch.gt(label,self.config.K),                
@@ -183,7 +183,7 @@ class Test:
                     torch.ones(testdata.size()[0]).to(self.device),
                     torch.zeros(testdata.size()[0]).to(self.device),
                     )
-                loss2 = torch.sum(torch.abs(label_OOD - output_OOD)) #额外的OOD损失，cond2
+                loss2 = torch.sum(torch.abs(label_OOD - output_OOD)) #extra OOD loss
                 loss = self.config.gamma * loss1 + (1 - self.config.gamma) * loss2
 
                 acc = accuracy(label_matrix, label)[0]  
