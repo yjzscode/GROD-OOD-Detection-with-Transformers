@@ -6,8 +6,6 @@ import matplotlib.pyplot as plt
 from omegaconf import OmegaConf
 import matplotlib.cm as cm 
 
-# config_path = '/home/wang1/ZYJ/OOD/codes1_03.11/config/config0.yaml'
-# config = OmegaConf.load(config_path)
 from torch.utils.data import Dataset
 # (N,d0)
 torch.manual_seed(42)
