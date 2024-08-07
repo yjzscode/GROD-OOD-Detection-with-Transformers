@@ -106,13 +106,12 @@ class GRODTrainer:
                         cov0 = self.calculate_covariance_matrix(tensor_data_in)+1e-4 * torch.eye(mean.size(0)).to(self.device)
                         L = torch.linalg.cholesky(cov0)
 
-                        # 求解下三角矩阵 L 的逆
+                        # Find the inverse of the lower triangular matrix L
                         L_inv = torch.linalg.inv(L)
 
-                        # 利用下三角矩阵的逆求解对称正定矩阵 A 的逆
+                        # Solve the inverse of a symmetric positive definite matrix A using the inverse of a lower triangular matrix
                         cov = torch.mm(L_inv.t(), L_inv)
-                        # cov = torch.linalg.inv(self.calculate_covariance_matrix(tensor_data_in)+1e-7 * torch.eye(mean.size(0)).to(self.device))
-                        # print(torch.mm(cov0, cov))
+                        
                         if torch.max(torch.abs(sub_datasets_in_mu[i,:]))<1e-7:
                             sub_datasets_in_cov[i,:,:] = cov
                             sub_datasets_in_mu[i,:] = mean
@@ -121,13 +120,13 @@ class GRODTrainer:
                             # print("1",sub_datasets_in_distances[i])
                         
                         sub_datasets_in_cov[i,:,:] = 0.1 * cov.detach().clone().to(self.device) + 0.9 * sub_datasets_in_cov[i,:,:].detach().clone()
-                        # print(sub_datasets_in_cov)
+                        
                         sub_datasets_in_mu[i,:] = 0.1 * mean.detach().clone().to(self.device) + 0.9 * sub_datasets_in_mu[i,:].detach().clone()
                         dists = self.mahalanobis(tensor_data_in, sub_datasets_in_mu.clone(), sub_datasets_in_cov.clone())[:,i]
                         dist = torch.max(dists)
-                        # print(dists.max(), dists.min())
+                       
                         sub_datasets_in_distances[i] = 0.1 * dist.to(self.device).detach().clone() + 0.9 * sub_datasets_in_distances[i].detach().clone()
-                        # print(i, sub_datasets_in_distances[i])
+                        
                         sub_datasets_in_mean =  repeat(sub_datasets_in_mu.clone()[i,:], "f -> b f", 
                                                     f = tensor_data_in.size(1), b = feat_lda.size()[1])
                     
@@ -177,56 +176,45 @@ class GRODTrainer:
                 
                 dataset_in_mu =  repeat(dataset_in_mu.squeeze(), "f -> b f", 
                                                 f = data_in.size(1), b = feat_lda.size()[1])
-                # print(data_rounded_category.size())
+               
                 B = pcadata_rounded_category
                 B_1 = pcadata_rounded_category_1
-                # print(A.size())
+                
                 pcavector = F.normalize(B.clone() - dataset_in_mu, dim = 1)
                 pcavector_1 = F.normalize(B_1.clone() - dataset_in_mu, dim = 1)
                 B = torch.add(B, self.alpha * pcavector) #(feat_dim, 768)
                 B_1 = torch.add(B_1, self.alpha * pcavector_1) #(feat_dim, 768)
                 mean_matrix_0 = B
                 mean_matrix_1 = B_1
-                # print(A.size())
+                
                 mean_matrix = torch.cat((mean_matrix_0, mean_matrix_1), dim = 0)
-                # mean_matrix = mean_matrix_0
+               
                 std = 1 / 3 * self.alpha
                 mu = mean_matrix.T.unsqueeze(2).to(self.device) 
                 rand_data = torch.randn(mean_matrix.size(1), self.nums_rounded).to(self.device) 
                 gaussian_data = mu + std * rand_data.unsqueeze(1) #(768, num, nums_rounded)
-                # print(gaussian_data.size())
+                
                 nums = gaussian_data.size(1)
                 nums_rounded = gaussian_data.size(2)
                 reshaped_rounded_data = gaussian_data.permute(1, 2, 0).contiguous().view(nums * nums_rounded, mean_matrix.size(1)) # (num* nums_rounded, 768)
-                # print(reshaped_rounded_data.size(),data.size())
                 data = torch.cat((data, reshaped_rounded_data), dim = 0)
-                # target = torch.cat((target, (self.n_cls) * torch.ones(nums * nums_rounded).to(self.device)), dim = 0)
-                # print(data.size())
-                # filt id like data
-                # print(sub_datasets_in_distances)
-                data_add = data[data_in.size(0):]   
-                # print(data_add.size())
+                
+                data_add = data[data_in.size(0):]                 
                 
                 distances = self.mahalanobis(data_add, sub_datasets_in_mu, sub_datasets_in_cov).to(self.device) #(n,k)
-                
-                # print(distances, sub_datasets_in_distances)
-                # 计算每个样本点的最小距离和对应的类别索引
+                            
+                # Calculate the minimum distance and corresponding category index of each sample point
                 min_distances, min_distances_clas = torch.min(distances, dim=1)                       
-                # 获取每个样本点对应的子数据集距离
+                # Get the sub-dataset distance corresponding to each sample point
                 sub_distances = sub_datasets_in_distances[min_distances_clas.to(self.device)]
                 
-                k_init = (torch.mean(min_distances / sub_distances) - 1) * 10
-                # 找到满足条件的索引
-                mask = min_distances > (1 + k_init * self.k.to(self.device)[0]) * sub_distances
+                k_init = (torch.mean(min_distances / sub_distances) - 1) * 10                
+                mask = min_distances > (1 + k_init * self.k.to(self.device)[0]) * sub_distances                
                 
-                
-                # # 找到满足条件的索引
-                # mask = min_distances > (1 + self.k.to(self.device)[0]) * sub_distances
-                # print(min_distances,sub_distances)
-                # 使用布尔索引删除满足条件的数据点
+                # Use Boolean indexing to remove data points that meet a condition
                 cleaned_data_add = data_add[mask.to(self.device)]
                 
-                if cleaned_data_add.size(0) > data_in.size(0) // self.n_cls + 2: #ood太多则随机删除
+                if cleaned_data_add.size(0) > data_in.size(0) // self.n_cls + 2: # If there are too many OOD, they will be deleted randomly.
                     delete_num = cleaned_data_add.size(0) - (data_in.size(0) // self.n_cls + 2)
                     indices = torch.randperm(cleaned_data_add.size(0))[:(data_in.size(0) // self.n_cls + 2)].to(self.device)
                     cleaned_data_add_de = cleaned_data_add[indices]
@@ -245,7 +233,6 @@ class GRODTrainer:
                 sub_datasets_in_cov = torch.zeros((self.n_cls, 768, 768)).to(self.device)
                 sub_datasets_in_distances = torch.zeros(self.n_cls).to(self.device)
                 data_in, feat_lda, feat_pca = self.net(data, target)
-                # data_in = self.head1(data_in)
                 data = data_in
                 # generate PCA ood data
                 argmax = torch.zeros(feat_pca.size()[1])
@@ -268,56 +255,45 @@ class GRODTrainer:
                 cov0 = self.calculate_covariance_matrix(data_in)+1e-4 * torch.eye(dataset_in_mu.size(0)).to(self.device)
                 L = torch.linalg.cholesky(cov0)
 
-                # 求解下三角矩阵 L 的逆
                 L_inv = torch.linalg.inv(L)
 
-                # 利用下三角矩阵的逆求解对称正定矩阵 A 的逆
                 cov = torch.mm(L_inv.t(), L_inv)
                 cov = torch.unsqueeze(cov, dim=0)
                 dataset_in_mean =  repeat(dataset_in_mu.squeeze(), "f -> b f", 
                                                 f = data_in.size(1), b = feat_lda.size()[1])
-                # dataset_in_mu = torch.unsqueeze(dataset_in_mu, dim=0)
-                # print(data_rounded_category.size())
+                
                 B = pcadata_rounded_category
                 B_1 = pcadata_rounded_category_1
-                # print(A.size())
+                
                 pcavector = F.normalize(B.clone() - dataset_in_mean, dim = 1)
                 pcavector_1 = F.normalize(B_1.clone() - dataset_in_mean, dim = 1)
                 B = torch.add(B, self.alpha * pcavector) #(feat_dim, 768)
                 B_1 = torch.add(B_1, self.alpha * pcavector_1) #(feat_dim, 768)
                 mean_matrix_0 = B
                 mean_matrix_1 = B_1
-                # print(A.size())
+                
                 mean_matrix = torch.cat((mean_matrix_0, mean_matrix_1), dim = 0)
-                # mean_matrix = mean_matrix_0
+                
                 std = 1 / 3 * self.alpha
                 mu = mean_matrix.T.unsqueeze(2).to(self.device) 
                 rand_data = torch.randn(mean_matrix.size(1), self.nums_rounded).to(self.device) 
                 gaussian_data = mu + std * rand_data.unsqueeze(1) #(768, num, nums_rounded)
-                # print(gaussian_data.size())
+               
                 nums = gaussian_data.size(1)
                 nums_rounded = gaussian_data.size(2)
                 reshaped_rounded_data = gaussian_data.permute(1, 2, 0).contiguous().view(nums * nums_rounded, mean_matrix.size(1)) # (num* nums_rounded, 768)
-                # print(reshaped_rounded_data.size(),data.size())
-                data = torch.cat((data, reshaped_rounded_data), dim = 0)
-                # target = torch.cat((target, (self.n_cls) * torch.ones(nums * nums_rounded).to(self.device)), dim = 0)
-                # print(data.size())
-                # filt id like data
-                # print(sub_datasets_in_distances)
-                data_add = data[data_in.size(0):]   
-                # print(data_add.size())
                 
+                data = torch.cat((data, reshaped_rounded_data), dim = 0)
+                
+                # filt id like data
+                data_add = data[data_in.size(0):]                   
                 distances_add = self.mahalanobis(data_add, dataset_in_mu, cov).to(self.device).squeeze() #(n,1)
                 distance = torch.max(self.mahalanobis(data[:data_in.size(0)], dataset_in_mu, cov).to(self.device))
                 k_init = (torch.mean(distances_add) / distance - 1) * 10
-                # 找到满足条件的索引
                 mask = distances_add > (1 + k_init * self.k.to(self.device)[0]) * distance
-                # print(distances_add, distance)
-                
-                # cleaned_data_add = data_add[mask.to(self.device)]
                 cleaned_data_add = data_add
                 
-                if cleaned_data_add.size(0) > data_in.size(0) // self.n_cls + 2: #ood太多则随机删除
+                if cleaned_data_add.size(0) > data_in.size(0) // self.n_cls + 2: 
                     delete_num = cleaned_data_add.size(0) - (data_in.size(0) // self.n_cls + 2)
                     indices = torch.randperm(cleaned_data_add.size(0))[:(data_in.size(0) // self.n_cls + 2)].to(self.device)
                     cleaned_data_add_de = cleaned_data_add[indices]
@@ -326,11 +302,7 @@ class GRODTrainer:
                     
                 
                 data = torch.cat((data[:data_in.size(0)], cleaned_data_add_de), dim = 0)
-                # data = data[:data_in.size(0)]
-
-
                 target = torch.cat((target, (self.n_cls) * torch.ones(cleaned_data_add_de.size(0)).to(self.device)), dim = 0)
-                # target = target
                 
 
             output = self.head(data)
@@ -377,11 +349,9 @@ class GRODTrainer:
         return total_losses_reduced
     
     def mahalanobis(self, x, support_mean, inv_covmat): #(n,d), (k,d), (k,d,d)
-        # 获取输入的张量维度信息
         n = x.size(0)
         d = x.size(1)
 
-        # 将输入张量和支持向量均值移到 GPU 上
         x = x.cuda()
         support_mean = support_mean.cuda()
 
@@ -391,29 +361,20 @@ class GRODTrainer:
             support_class = support_mean[i].detach()
         
             x_mu = x - support_class.unsqueeze(0).expand(n, d)            
-            # 将类别协方差矩阵移到 GPU 上
             class_inv_cov = class_inv_cov.cuda()
-            # print(torch.max(torch.abs(class_inv_cov)))
 
-            # 计算 Mahalanobis 距离
+            # Calculate Mahalanobis distances
             left = torch.matmul(x_mu, class_inv_cov)
-            # print(left.size())
             mahal = torch.matmul(left, x_mu.t()).diagonal()
-            # print('2', mahal) 
-            # print(torch.matmul(left, x_mu.t()))
             maha_dists.append(mahal)
 
-        # 将结果转换为 PyTorch 张量
         return torch.stack(maha_dists).t()
     
     def calculate_covariance_matrix(self, data):
-        # 计算数据的均值
         mean = torch.mean(data, dim=0)
         mean = mean.unsqueeze(0).expand(data.size(0), data.size(1))
-        # 将数据减去均值，得到去中心化的数据
+        # Subtract the mean from the data to get decentralized data
         centered_data = data - mean
 
-        # 计算协方差矩阵
         covariance_matrix = torch.mm(centered_data.t(), centered_data) / (centered_data.size(0) - 1 + 1e-7)
-        # print(covariance_matrix.size())
         return covariance_matrix
