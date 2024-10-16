@@ -74,7 +74,7 @@ class GRODTrainer:
             sub_datasets_lda = [Subset(feat_lda, torch.where(target == i)[0]) for i in range(self.n_cls)]            
             
             # Count the number of samples in each sub-dataset
-            dataset_lengths = [len(subset) for subset in sub_datasets_lda]
+            dataset_lengths = torch.tensor([len(subset) for subset in sub_datasets_lda])
             mask = dataset_lengths > 1
             n = len(dataset_lengths[mask])
             lda_class = min(int(2 * data.size(0) / self.n_cls * feat_lda.size()[1]), n)
