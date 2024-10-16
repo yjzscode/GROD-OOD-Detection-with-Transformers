@@ -77,7 +77,7 @@ class GRODTrainer:
             dataset_lengths = torch.tensor([len(subset) for subset in sub_datasets_lda])
             mask = dataset_lengths > 1
             n = len(dataset_lengths[mask])
-            lda_class = min(int(2 * data.size(0) / self.n_cls * feat_lda.size()[1]), n)
+            lda_class = min(int(2 * data.size(0) / (self.n_cls * feat_lda.size()[1])), n)
             
             # generate PCA ood data
             argmax = torch.zeros(feat_pca.size()[1])
