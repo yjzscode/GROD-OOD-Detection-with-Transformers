@@ -244,7 +244,7 @@ class GRODTrainer:
                 
 
             output = self.head(data)
-            output = F.normalize(output, dim=1)
+            # output = F.normalize(output, dim=1)
             loss1 = F.cross_entropy(output, target.to(torch.long))
 
             label_matrix = output
