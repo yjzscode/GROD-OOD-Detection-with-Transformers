@@ -165,16 +165,21 @@ class GRODTrainer:
 
                     # Solve the inverse of a symmetric positive definite matrix A using the inverse of a lower triangular matrix
                     cov = torch.mm(L_inv.t(), L_inv)
-                    if torch.max(torch.abs(sub_datasets_in_mu[i,:]))<1e-7:
-                        sub_datasets_in_cov[i,:,:] = cov.detach()
-                        sub_datasets_in_mu[i,:] = mean.detach()                        
-                        sub_datasets_in_distances[i] = torch.max(self.mahalanobis(tensor_data_in, sub_datasets_in_mu.clone(), sub_datasets_in_cov.clone())[:,i]).detach()                                                                     
+
+                    sub_datasets_in_cov[i,:,:] = cov.detach()
+                    sub_datasets_in_mu[i,:] = mean.detach()                        
+                    sub_datasets_in_distances[i] = torch.max(self.mahalanobis(tensor_data_in, sub_datasets_in_mu.clone(), sub_datasets_in_cov.clone())[:,i]).detach()  
                     
-                    sub_datasets_in_cov[i,:,:] = 0.1 * cov.detach().clone().to(self.device) + 0.9 * sub_datasets_in_cov[i,:,:].detach().clone()
-                    sub_datasets_in_mu[i,:] = 0.1 * mean.detach().clone().to(self.device) + 0.9 * sub_datasets_in_mu[i,:].detach().clone()
-                    dists = self.mahalanobis(tensor_data_in, sub_datasets_in_mu.clone(), sub_datasets_in_cov.clone())[:,i]
-                    dist = torch.max(dists)
-                    sub_datasets_in_distances[i] = 0.1 * dist.to(self.device).detach().clone() + 0.9 * sub_datasets_in_distances[i].detach().clone()
+                    # if torch.max(torch.abs(sub_datasets_in_mu[i,:]))<1e-7:
+                    #     sub_datasets_in_cov[i,:,:] = cov.detach()
+                    #     sub_datasets_in_mu[i,:] = mean.detach()                        
+                    #     sub_datasets_in_distances[i] = torch.max(self.mahalanobis(tensor_data_in, sub_datasets_in_mu.clone(), sub_datasets_in_cov.clone())[:,i]).detach()                                                                     
+                    
+                    # sub_datasets_in_cov[i,:,:] = 0.1 * cov.detach().clone().to(self.device) + 0.9 * sub_datasets_in_cov[i,:,:].detach().clone()
+                    # sub_datasets_in_mu[i,:] = 0.1 * mean.detach().clone().to(self.device) + 0.9 * sub_datasets_in_mu[i,:].detach().clone()
+                    # dists = self.mahalanobis(tensor_data_in, sub_datasets_in_mu.clone(), sub_datasets_in_cov.clone())[:,i]
+                    # dist = torch.max(dists)
+                    # sub_datasets_in_distances[i] = 0.1 * dist.to(self.device).detach().clone() + 0.9 * sub_datasets_in_distances[i].detach().clone()
                     sub_datasets_in_mean =  repeat(sub_datasets_in_mu.clone()[i,:], "f -> b f", 
                                                 f = tensor_data_in.size(1), b = feat_lda.size()[1])
                     
