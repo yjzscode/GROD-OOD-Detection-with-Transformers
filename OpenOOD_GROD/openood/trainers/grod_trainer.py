@@ -54,7 +54,9 @@ class GRODTrainer:
         dataset_in_mu = torch.zeros(768).to(self.device) #(f)
         sub_datasets_in_cov = torch.zeros((self.n_cls, 768, 768)).to(self.device)
         sub_datasets_in_distances = torch.zeros(self.n_cls).to(self.device)
-
+        
+        torch.autograd.detect_anomaly(True)
+        
         for train_step in tqdm(range(1,
                                      len(train_dataiter) + 1),
                                desc='Epoch {:03d}: '.format(epoch_idx),
@@ -68,6 +70,9 @@ class GRODTrainer:
             
             data_in, feat_lda, feat_pca = self.net(data, target)
             data = data_in
+            data_in = data_in.detach()
+            feat_lda = feat_lda.detach()
+            feat_pca = feat_pca.detach()
 
             # generate rounded ood data
             sub_datasets_in = [Subset(data_in, torch.where(target == i)[0]) for i in range(self.n_cls)]
@@ -94,20 +99,20 @@ class GRODTrainer:
                     
                     pcadata_rounded_category = torch.cat((pcadata_rounded_category, data_in[int(argmax[j].item())].unsqueeze(0)),dim=0)
                     pcadata_rounded_category_1 = torch.cat((pcadata_rounded_category_1, data_in[int(argmin[j].item())].unsqueeze(0)),dim=0)
-            if train_step == 1:
-                dataset_in_mu = torch.mean(data_in, dim = 0)
+            # if train_step == 1:
+            #     dataset_in_mu = torch.mean(data_in, dim = 0)
             # dataset_in_mu = 0.1 * torch.mean(data_in.detach().clone(), dim = 0) + 0.9 * dataset_in_mu.detach().clone() 
             dataset_in_mu = torch.mean(data_in.detach().clone(), dim = 0)
             dataset_in_mu =  repeat(dataset_in_mu.squeeze(), "f -> b f", 
                                             f = data_in.size(1), b = feat_lda.size()[1])
             # print(data_rounded_category.size())
-            B = pcadata_rounded_category
-            B_1 = pcadata_rounded_category_1
+            B = pcadata_rounded_category.detach()
+            B_1 = pcadata_rounded_category_1.detach()
             # print(A.size())
             pcavector = F.normalize(B.clone() - dataset_in_mu, dim = 1)
             pcavector_1 = F.normalize(B_1.clone() - dataset_in_mu, dim = 1)
-            B = torch.add(B, self.alpha * pcavector) #(feat_dim, 768)
-            B_1 = torch.add(B_1, self.alpha * pcavector_1) #(feat_dim, 768)
+            B = torch.add(B, self.alpha * pcavector).detach() #(feat_dim, 768)
+            B_1 = torch.add(B_1, self.alpha * pcavector_1).detach() #(feat_dim, 768)
             mean_matrix_0 = B
             mean_matrix_1 = B_1
             # print(A.size())
@@ -124,8 +129,15 @@ class GRODTrainer:
             # print(reshaped_rounded_data.size(),data.size())
             data = torch.cat((data, reshaped_rounded_data), dim = 0)
             
+            
+            
             if lda_class == 0:
-                pass
+                cov0 = self.calculate_covariance_matrix(data_in).detach() + 5e-4 * torch.eye(dataset_in_mu.size(0)).to(self.device).detach()
+                L = torch.linalg.cholesky(cov0).detach()
+                L_inv = torch.linalg.inv(L).detach()
+
+                # Solve the inverse of a symmetric positive definite matrix A using the inverse of a lower triangular matrix
+                dataset_in_cov = torch.mm(L_inv.t(), L_inv).unsqueeze(0).detach()
             else:
                 
                 # Get the index of sub-datasets with the largest amount of data
@@ -159,9 +171,9 @@ class GRODTrainer:
                             data_rounded_category_1 = torch.cat((data_rounded_category_1, tensor_data_in[int(arg_min[i][j].item())].unsqueeze(0)),dim=0)
 
                     mean =  torch.mean(tensor_data_in, dim = 0)
-                    cov0 = self.calculate_covariance_matrix(tensor_data_in)+1e-4 * torch.eye(mean.size(0)).to(self.device)
-                    L = torch.linalg.cholesky(cov0)
-                    L_inv = torch.linalg.inv(L)
+                    cov0 = (self.calculate_covariance_matrix(tensor_data_in)+1e-4 * torch.eye(mean.size(0)).to(self.device)).detach()
+                    L = torch.linalg.cholesky(cov0).detach()
+                    L_inv = torch.linalg.inv(L).detach()
 
                     # Solve the inverse of a symmetric positive definite matrix A using the inverse of a lower triangular matrix
                     cov = torch.mm(L_inv.t(), L_inv)
@@ -183,12 +195,12 @@ class GRODTrainer:
                     sub_datasets_in_mean =  repeat(sub_datasets_in_mu.clone()[i,:], "f -> b f", 
                                                 f = tensor_data_in.size(1), b = feat_lda.size()[1])
                     
-                    A = data_rounded_category[-feat_lda.size()[1]:]
-                    A_1 = data_rounded_category_1[- feat_lda.size()[1]:]
+                    A = data_rounded_category[-feat_lda.size()[1]:].detach()
+                    A_1 = data_rounded_category_1[- feat_lda.size()[1]:].detach()
                     vector = F.normalize(A.to(self.device) - sub_datasets_in_mean.to(self.device), dim = 1)
                     vector_1 = F.normalize(A_1.to(self.device) - sub_datasets_in_mean.to(self.device), dim = 1)
-                    A = A + self.alpha * vector.to(self.device) #(feat_dim, 768)
-                    A_1 = A_1 + self.alpha * vector_1.to(self.device) #(feat_dim, 768)
+                    A = A + self.alpha * vector.detach().to(self.device) #(feat_dim, 768)
+                    A_1 = A_1 + self.alpha * vector_1.detach().to(self.device) #(feat_dim, 768)
                     if k == 1:
                         mean_matrix_0 = A
                         mean_matrix_1 = A_1
@@ -208,15 +220,17 @@ class GRODTrainer:
                     data = torch.cat((data, reshaped_rounded_data), dim = 0)
                     # print(reshaped_rounded_data.size())
 
-                data_add = data[data_in.size(0):]   
-                # print(data_add.size())
+            data_add = data[data_in.size(0):]   
+            # print(data_add.size())
                 
+            
+            
             if lda_class == 0:
-                distances_add = self.mahalanobis(data_add, dataset_in_mu, cov).to(self.device).squeeze() #(n,1)
-                distance = torch.max(self.mahalanobis(data[:data_in.size(0)], dataset_in_mu, cov).to(self.device))
+                distances_add = self.mahalanobis(data_add, dataset_in_mu, dataset_in_cov).to(self.device).squeeze() #(n,1)
+                distance = torch.max(self.mahalanobis(data[:data_in.size(0)], dataset_in_mu, dataset_in_cov).to(self.device))
                 k_init = (torch.mean(distances_add) / distance - 1) * 10
                 mask = distances_add > (1 + k_init * self.k.to(self.device)[0]) * distance
-                cleaned_data_add = data_add[mask.to(self.device)]
+                cleaned_data_add = data_add[mask.to(self.device)]   
             else:                    
                 distances = self.mahalanobis(data_add, sub_datasets_in_mu, sub_datasets_in_cov).to(self.device) #(n,k)
                 
@@ -304,6 +318,7 @@ class GRODTrainer:
 
             # Mahalanobis distances
             left = torch.matmul(x_mu, class_inv_cov)
+            # print(x_mu.size(), class_inv_cov.size(), left.size())
             mahal = torch.matmul(left, x_mu.t()).diagonal()
             maha_dists.append(mahal)
 
