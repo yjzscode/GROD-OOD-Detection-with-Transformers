@@ -214,8 +214,8 @@ class GRODTrainer:
                 if lda_class == 0:
                     distances_add = self.mahalanobis(data_add, dataset_in_mu, cov).to(self.device).squeeze() #(n,1)
                     distance = torch.max(self.mahalanobis(data[:data_in.size(0)], dataset_in_mu, cov).to(self.device))
-                
-                    mask = distances_add > (1 + self.k.to(self.device)[0]) * distance
+                    k_init = (torch.mean(distances_add) / distance - 1) * 10
+                    mask = distances_add > (1 + k_init * self.k.to(self.device)[0]) * distance
                     cleaned_data_add = data_add[mask.to(self.device)]
                 else:                    
                     distances = self.mahalanobis(data_add, sub_datasets_in_mu, sub_datasets_in_cov).to(self.device) #(n,k)
@@ -225,7 +225,9 @@ class GRODTrainer:
                     # Get the sub-dataset distance corresponding to each sample point
                     sub_distances = sub_datasets_in_distances[min_distances_clas.to(self.device)]
                     
-                    mask = min_distances > (1 + self.k.to(self.device)[0]) * sub_distances
+                    k_init = (torch.mean(min_distances / sub_distances) - 1) * 10
+                    
+                    mask = min_distances > (1 + k_init * self.k.to(self.device)[0]) * sub_distances
                     # Use Boolean indexing to remove data points that meet a condition
                     cleaned_data_add = data_add[mask.to(self.device)]
                 
