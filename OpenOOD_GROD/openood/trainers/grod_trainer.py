@@ -96,8 +96,8 @@ class GRODTrainer:
                     pcadata_rounded_category_1 = torch.cat((pcadata_rounded_category_1, data_in[int(argmin[j].item())].unsqueeze(0)),dim=0)
             if train_step == 1:
                 dataset_in_mu = torch.mean(data_in, dim = 0)
-            dataset_in_mu = 0.1 * torch.mean(data_in.detach().clone(), dim = 0) + 0.9 * dataset_in_mu.detach().clone() 
-            
+            # dataset_in_mu = 0.1 * torch.mean(data_in.detach().clone(), dim = 0) + 0.9 * dataset_in_mu.detach().clone() 
+            dataset_in_mu = torch.mean(data_in.detach().clone(), dim = 0)
             dataset_in_mu =  repeat(dataset_in_mu.squeeze(), "f -> b f", 
                                             f = data_in.size(1), b = feat_lda.size()[1])
             # print(data_rounded_category.size())
