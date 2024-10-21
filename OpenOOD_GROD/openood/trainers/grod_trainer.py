@@ -211,38 +211,38 @@ class GRODTrainer:
                 data_add = data[data_in.size(0):]   
                 # print(data_add.size())
                 
-                if lda_class == 0:
-                    distances_add = self.mahalanobis(data_add, dataset_in_mu, cov).to(self.device).squeeze() #(n,1)
-                    distance = torch.max(self.mahalanobis(data[:data_in.size(0)], dataset_in_mu, cov).to(self.device))
-                    k_init = (torch.mean(distances_add) / distance - 1) * 10
-                    mask = distances_add > (1 + k_init * self.k.to(self.device)[0]) * distance
-                    cleaned_data_add = data_add[mask.to(self.device)]
-                else:                    
-                    distances = self.mahalanobis(data_add, sub_datasets_in_mu, sub_datasets_in_cov).to(self.device) #(n,k)
-                    
-                    # Calculate the minimum distance and corresponding category index of each sample point
-                    min_distances, min_distances_clas = torch.min(distances, dim=1)                       
-                    # Get the sub-dataset distance corresponding to each sample point
-                    sub_distances = sub_datasets_in_distances[min_distances_clas.to(self.device)]
-                    
-                    k_init = (torch.mean(min_distances / sub_distances) - 1) * 10
-                    
-                    mask = min_distances > (1 + k_init * self.k.to(self.device)[0]) * sub_distances
-                    # Use Boolean indexing to remove data points that meet a condition
-                    cleaned_data_add = data_add[mask.to(self.device)]
+            if lda_class == 0:
+                distances_add = self.mahalanobis(data_add, dataset_in_mu, cov).to(self.device).squeeze() #(n,1)
+                distance = torch.max(self.mahalanobis(data[:data_in.size(0)], dataset_in_mu, cov).to(self.device))
+                k_init = (torch.mean(distances_add) / distance - 1) * 10
+                mask = distances_add > (1 + k_init * self.k.to(self.device)[0]) * distance
+                cleaned_data_add = data_add[mask.to(self.device)]
+            else:                    
+                distances = self.mahalanobis(data_add, sub_datasets_in_mu, sub_datasets_in_cov).to(self.device) #(n,k)
                 
-                if cleaned_data_add.size(0) > data_in.size(0) // self.n_cls + 2:
-                    delete_num = cleaned_data_add.size(0) - (data_in.size(0) // self.n_cls + 2)
-                    indices = torch.randperm(cleaned_data_add.size(0))[:(data_in.size(0) // self.n_cls + 2)].to(self.device)
-                    cleaned_data_add_de = cleaned_data_add[indices]
-                else: 
-                    cleaned_data_add_de = cleaned_data_add
+                # Calculate the minimum distance and corresponding category index of each sample point
+                min_distances, min_distances_clas = torch.min(distances, dim=1)                       
+                # Get the sub-dataset distance corresponding to each sample point
+                sub_distances = sub_datasets_in_distances[min_distances_clas.to(self.device)]
+                
+                k_init = (torch.mean(min_distances / sub_distances) - 1) * 10
+                
+                mask = min_distances > (1 + k_init * self.k.to(self.device)[0]) * sub_distances
+                # Use Boolean indexing to remove data points that meet a condition
+                cleaned_data_add = data_add[mask.to(self.device)]
+                
+            if cleaned_data_add.size(0) > data_in.size(0) // self.n_cls + 2:
+                delete_num = cleaned_data_add.size(0) - (data_in.size(0) // self.n_cls + 2)
+                indices = torch.randperm(cleaned_data_add.size(0))[:(data_in.size(0) // self.n_cls + 2)].to(self.device)
+                cleaned_data_add_de = cleaned_data_add[indices]
+            else: 
+                cleaned_data_add_de = cleaned_data_add
                     
                 
-                data = torch.cat((data[:data_in.size(0)], cleaned_data_add_de), dim = 0)
+            data = torch.cat((data[:data_in.size(0)], cleaned_data_add_de), dim = 0)
 
 
-                target = torch.cat((target, (self.n_cls) * torch.ones(cleaned_data_add_de.size(0)).to(self.device)), dim = 0)
+            target = torch.cat((target, (self.n_cls) * torch.ones(cleaned_data_add_de.size(0)).to(self.device)), dim = 0)
                 
 
             output = self.head(data)
