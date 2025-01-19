@@ -35,18 +35,18 @@ To run the fine-tuning:
 cd ./OpenOOD_GROD/scripts/ood/grod
 ```
 ```
-bash cifar10_train_grod.sh
+bash cifar100_train_grod.sh
 ```
 To run the post-processing:
 ```
 cd ./OpenOOD_GROD/scripts/ood/grod
 ```
 ```
-bash cifar10_test_grod.sh
+bash cifar100_test_grod.sh
 ```
 
 ### NLP tasks
-Run OpenOOD_GROD/text_classification/easy_dev.ipynb
+Run OpenOOD_GROD/text_classification/easy_dev.ipynb and OpenOOD_GROD/text_classification/easy_dev_GPT.ipynb
 
 ### Learning how GROD narrow the gap between theory and reality
 Codes of experiments for generated Gaussian mixture datasets are in the fold ``Gaussian_distribution".
