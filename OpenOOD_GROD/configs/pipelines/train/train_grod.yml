@@ -23,7 +23,7 @@ pipeline:
   name: train
 
 trainer:
-  name: grod_soft_label
+  name: grod
   alpha: 0.001
   nums_rounded: '@{network.feat_dim}'
   gamma: 0.1
