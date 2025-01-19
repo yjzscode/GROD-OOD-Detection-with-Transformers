@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -21,10 +20,10 @@ class GRODNet(nn.Module):
         self.n_cls = num_classes
         self.head1 = nn.Linear(self.backbone.hidden_dim, 2 * num_classes)
         self.head = nn.Linear(self.backbone.hidden_dim, self.n_cls + 1)
-        self.k = nn.Parameter(torch.tensor([0.2], dtype=torch.float32, requires_grad=True))
+        self.k = nn.Parameter(torch.tensor([0.1], dtype=torch.float32, requires_grad=True))
 
     def forward(self, x, y): #x:data feature, y:label
-        feat = self.backbone(x)[1] 
+        feat = self.backbone(x)[1]#.squeeze() #(b,768)
         # output = self.backbone(x)[0].squeeze() #(b,10)
         self.lda.fit(feat, y)
         X_lda = self.lda.transform(feat) #(b, feat_dim)
@@ -37,7 +36,7 @@ class GRODNet(nn.Module):
         feat = self.backbone(x)[1]
         output = self.head(feat)
         score = torch.softmax(output, dim=1)
-        score0 = output# [:,:-1]
+        score0 = output[:,:-1]
         # score0 = torch.softmax(output[:,:-1], dim=1)
         conf = torch.max(score, dim=1)
         pred = torch.argmax(score, dim=1)
@@ -47,11 +46,11 @@ class GRODNet(nn.Module):
             if pred[i] == output.size(1) - 1:
                 # conf[i] = 0.1
                 # pred[i] = 1
-                score0[i] = 0.09 * torch.ones(score0.size(1)).cuda()
+                score0[i] = 0.1 * torch.ones(score0.size(1)).cuda()
             # else:
                 # conf[i] = conf0[i]   
         # return score0
-        return F.normalize(score0, dim=1)[:,:-1]
+        return F.normalize(score0, dim=1)
 
 
 
@@ -93,7 +92,7 @@ class LDA(nn.Module):
         # torch.backends.cuda.preferred_linalg_library('magma')
         # print((torch.inverse(within_class_scatter) @ between_class_scatter).size()) #(768,768)
         eigenvalues, eigenvectors = torch.linalg.eigh(
-        torch.inverse(within_class_scatter @ between_class_scatter  + 1e-4 * torch.eye((within_class_scatter @ between_class_scatter).size(0)).to(X.device)
+        torch.inverse(within_class_scatter @ between_class_scatter  + 1e-7 * torch.eye((within_class_scatter @ between_class_scatter).size(0)).to(X.device)
         ))
         _, top_indices = torch.topk(eigenvalues, k=self.n_components, largest=True)
         self.components = eigenvectors[:, top_indices]
