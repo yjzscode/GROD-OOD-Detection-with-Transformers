@@ -1,6 +1,6 @@
 network:
   name: grod_net
-  num_classes: 10
+  num_classes: 20
   pretrained: False # In training pipeline:"False"; In testing pipeline:"True"
   num_gpus: 1
   checkpoint: none
