@@ -1,6 +1,6 @@
 network:
   name: grod_net
-  num_classes: 2
+  num_classes: 10
   pretrained: False # In training pipeline:"False"; In testing pipeline:"True"
   num_gpus: 1
   checkpoint: none
@@ -19,7 +19,7 @@ output_dir: ./results/
 save_output: True
 merge_option: default
 mark: default
-seed: 0
+seed: 2
 
 num_gpus: 1
 num_workers: 15
@@ -34,7 +34,7 @@ pipeline:
 
 trainer:
   name: grod
-  alpha: 0.1
+  alpha: 0.001
   nums_rounded: 1
   gamma: 0.1
 
@@ -43,16 +43,16 @@ evaluator:
 
 optimizer:
   name: adamw
-  num_epochs: 20
-  lr: 0.00002
+  num_epochs: 10
+  lr: 0.00005
   momentum: 0.9
-  weight_decay: 0.001
+  weight_decay: 0.1
 
 recorder:
   name: base
   save_all_models: False
 
 dataset:
-  num_classes: 2
+  num_classes: 10
   batch_size: 64
 
