@@ -1,0 +1,8 @@
+dataset: 'IMDB'
+K: 2
+batch_size: 32
+epochs: 20
+lr: 0.000001
+weight_decay: 0.1
+momentum: 0.9
+  
