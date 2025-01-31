@@ -1,0 +1,58 @@
+network:
+  name: grod_net
+  num_classes: 2
+  pretrained: False # In training pipeline:"False"; In testing pipeline:"True"
+  num_gpus: 1
+  checkpoint: none
+  feat_dim: 1
+
+postprocessor:
+  name: vim
+  APS_mode: True
+  postprocessor_args:
+    dim: 256
+  postprocessor_sweep:
+    dim_list: [256, 1000]
+
+exp_name: "'@{dataset.name}'_'@{network.name}'_num'@{network.feat_dim}'_'@{trainer.name}'_al'@{trainer.alpha}'_gm'@{trainer.gamma}'_e'@{optimizer.num_epochs}'_lr'@{optimizer.lr}'_'@{mark}'/s'@{seed}'"
+output_dir: ./results/
+save_output: True
+merge_option: default
+mark: default
+seed: 0
+
+num_gpus: 1
+num_workers: 15
+num_machines: 1
+machine_rank: 0
+
+preprocessor:
+  name: base
+
+pipeline:
+  name: train
+
+trainer:
+  name: grod
+  alpha: 0.001
+  nums_rounded: 1
+  gamma: 0.1
+
+evaluator:
+  name: base
+
+optimizer:
+  name: adamw
+  num_epochs: 20
+  lr: 0.00005
+  momentum: 0.9
+  weight_decay: 0.1
+
+recorder:
+  name: base
+  save_all_models: False
+
+dataset:
+  num_classes: 2
+  batch_size: 16
+
