@@ -41,7 +41,7 @@ bash cifar100_test_grod.sh
 Run `OpenOOD_GROD/text_classification/easy_dev.ipynb` and `OpenOOD_GROD/text_classification/easy_dev_GPT.ipynb` for BERT and GPT-2 backbones respectively, and `OpenOOD_GROD/text_classification/Llama_Experiments` for Llama models.
 
 ### Learning how GROD narrows the gap between theory and reality
-Codes of experiments for generated Gaussian mixture datasets are in the fold ``Gaussian_distribution".
+Codes of experiments for generated Gaussian mixture datasets are in the fold `Gaussian_distribution`.
 
 ## Citing our work
 Please cite the following paper if you use our code:
